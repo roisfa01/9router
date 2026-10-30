@@ -1,0 +1,20 @@
+{
+  "name": "9router-cloudflare",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "9Router Edge - Smart Multi-Model AI Agent Router & Token Saver for OpenCode on Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev --port 20128",
+    "deploy": "wrangler deploy",
+    "cf:setup": "node scripts/setup-cloudflare.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/router.test.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261023.1",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.2",
+    "wrangler": "^4.153.0"
+  }
+}

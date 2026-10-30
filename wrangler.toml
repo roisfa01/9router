@@ -1,0 +1,22 @@
+name = "9router-ai"
+main = "src/index.ts"
+compatibility_date = "2025-03-01"
+workers_dev = true
+
+[vars]
+APP_NAME = "9Router Edge"
+DEFAULT_RTK_ENABLED = "true"
+DEFAULT_CAVEMAN_MODE = "off"
+
+[[kv_namespaces]]
+binding = "ROUTER_KV"
+id = "9000acd8c4b049caa1065e1b4dcd70ab"
+
+[[d1_databases]]
+binding = "ROUTER_DB"
+database_name = "9router-db"
+database_id = "cf563615-0b9c-4f64-9d6b-3f788a749d04"
+
+[ai]
+binding = "AI"
+

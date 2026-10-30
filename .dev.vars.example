@@ -1,0 +1,28 @@
+# Salin file ini menjadi `.dev.vars` untuk testing lokal (`npm run dev`)
+# Untuk produksi di Cloudflare, set lewat Dashboard Web 9Router (jika pakai KV)
+# atau lewat `npx wrangler secret put NAMA_VARIABEL` / Cloudflare Dashboard -> Settings -> Variables.
+
+# Password login Dashboard Web 9Router (Wajib diganti saat deploy!)
+ADMIN_PASSWORD=admin123
+
+# API Key yang dipakai oleh OpenCode / Cursor / Claude Code untuk memanggil 9Router ini
+ROUTER_API_KEY=sk-9r-opencode-secret-key
+
+# --- ISI PROVIDER YANG ANDA PUNYA SAJA (Bisa >1 key dipisah koma untuk rotasi otomatis!) ---
+GEMINI_API_KEY=
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+CEREBRAS_API_KEY=
+DEEPSEEK_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+MISTRAL_API_KEY=
+XAI_API_KEY=
+GLM_API_KEY=
+KIMI_API_KEY=
+MINIMAX_API_KEY=
+NVIDIA_API_KEY=
+GITHUB_TOKEN=
+TOGETHER_API_KEY=
+FIREWORKS_API_KEY=
+OPENCODE_API_KEY=
