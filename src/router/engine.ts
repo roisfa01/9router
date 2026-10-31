@@ -177,30 +177,39 @@ function parseSingleRouteString(
   return { provider, upstreamModel: modelPart };
 }
 
-function getAntigravityTierFallbacks(upstreamModel: string): string[] {
+function getAntigravityTierFallbacks(upstreamModel: string, variant = ""): string[] {
   const m = upstreamModel.trim().toLowerCase();
-  if (m.startsWith("gemini-4-argon")) {
-    return ["gemini-3.8-flash-high", "gemini-3-flash", "gemini-2.5-flash", "claude-sonnet-5-5-high", "gemini-2.5-pro"];
+  const v = (variant || "").toLowerCase().trim();
+  const explicitHigh = v === "high" || v === "max" || v === "xhigh" || m.endsWith("-high");
+  const explicitLow = v === "low" || v === "minimal" || v === "none" || m.endsWith("-low");
+  const tier = explicitLow ? "low" : explicitHigh ? "high" : "medium";
+  const flashTier = `gemini-3.8-flash-${tier}`;
+  const sonnetTier = `claude-sonnet-5-5-${tier}`;
+  const opusTier = `claude-opus-5-5-${tier}`;
+
+  if (m.startsWith("gemini-4-argon") || m === "argon") {
+    return [flashTier, "gemini-3-flash", "gemini-2.5-flash", sonnetTier, "gemini-2.5-pro"];
   }
   if (m.startsWith("claude-sonnet")) {
-    return ["gemini-3.8-flash-high", "claude-opus-5-5-high", "gemini-2.5-pro"];
+    return [flashTier, opusTier, "gemini-2.5-pro"];
   }
   if (m.startsWith("claude-opus")) {
-    return ["claude-sonnet-5-5-high", "gemini-3.8-flash-high", "gemini-2.5-pro"];
+    return [sonnetTier, flashTier, "gemini-2.5-pro"];
   }
   if (m.startsWith("gemini-3.1-pro") || m === "gemini-pro-agent") {
-    return ["gemini-3.8-flash-high", "gemini-3-flash", "gemini-2.5-pro"];
+    return [flashTier, "gemini-3-flash", "gemini-2.5-pro"];
   }
   if (m === "gemini-2.5-pro" || m.startsWith("gemini-2.5-pro")) {
-    return ["gemini-3.8-flash-high", "gemini-3-flash", "gemini-2.5-flash", "gemini-3.8-flash-medium", "claude-sonnet-5-5-high"];
+    return [flashTier, "gemini-3-flash", "gemini-2.5-flash", sonnetTier];
   }
   if (m.startsWith("gemini-3.8-flash")) {
-    return ["gemini-3-flash", "gemini-2.5-flash", "claude-sonnet-5-5-high", "gpt-oss-120b-medium"];
+    const altFlash = tier === "low" ? "gemini-3.8-flash-medium" : "gemini-3.8-flash-low";
+    return [altFlash, "gemini-3-flash", "gemini-2.5-flash", sonnetTier, "gpt-oss-120b-medium"];
   }
   if (m.startsWith("gemini-3-flash") || m.startsWith("gemini-2.5-flash")) {
-    return ["gemini-3.8-flash-high", "gemini-3.8-flash-medium", "claude-sonnet-5-5-high"];
+    return [flashTier, sonnetTier];
   }
-  return ["gemini-3.8-flash-high", "claude-sonnet-5-5-high", "gemini-2.5-pro"];
+  return [flashTier, sonnetTier, "gemini-2.5-pro"];
 }
 
 export function resolveCandidates(
@@ -315,10 +324,10 @@ export function resolveCandidates(
       } else if (lower === "gemini-2.5-flash" || lower.startsWith("gemini-2.5-flash")) {
         heuristicTargets.push({ provider: agProvider, upstreamModel: "gemini-2.5-flash" });
       } else if (lower.includes("opus")) {
-        heuristicTargets.push({ provider: agProvider, upstreamModel: "claude-opus-5-5-high" });
-        heuristicTargets.push({ provider: agProvider, upstreamModel: "claude-sonnet-5-5-high" });
+        heuristicTargets.push({ provider: agProvider, upstreamModel: "claude-opus-5-5" });
+        heuristicTargets.push({ provider: agProvider, upstreamModel: "claude-sonnet-5-5" });
       } else if (lower.includes("sonnet")) {
-        heuristicTargets.push({ provider: agProvider, upstreamModel: "claude-sonnet-5-5-high" });
+        heuristicTargets.push({ provider: agProvider, upstreamModel: "claude-sonnet-5-5" });
         heuristicTargets.push({ provider: agProvider, upstreamModel: "gemini-3.8-flash" });
       } else if (lower.includes("gemini") || lower.includes("flash")) {
         heuristicTargets.push({ provider: agProvider, upstreamModel: "gemini-3.8-flash" });
@@ -570,12 +579,28 @@ export async function routeChatCompletion(
     requestedModel = parts[0].trim();
     variantFromModel = parts[1]?.toLowerCase().trim() || "";
   }
-  const rawVariant = (rawBody as Record<string, unknown>).variant;
-  const rawReasoning = (rawBody as Record<string, unknown>).reasoning_effort;
-  const requestedVariantStr = variantFromModel ||
+  const bodyAny = rawBody as Record<string, unknown>;
+  const rawVariant = bodyAny.variant;
+  const rawReasoning = bodyAny.reasoning_effort ?? bodyAny.reasoningEffort;
+  const nestedReasoning =
+    bodyAny.reasoning && typeof bodyAny.reasoning === "object"
+      ? (bodyAny.reasoning as Record<string, unknown>).effort
+      : undefined;
+  const nestedThinking =
+    bodyAny.thinkingConfig && typeof bodyAny.thinkingConfig === "object"
+      ? (bodyAny.thinkingConfig as Record<string, unknown>).thinkingLevel
+      : bodyAny.thinking && typeof bodyAny.thinking === "object"
+        ? (bodyAny.thinking as Record<string, unknown>).effort
+        : undefined;
+  const headerEffort = req.headers.get("x-9router-effort") || req.headers.get("x-reasoning-effort") || "";
+
+  const requestedVariantStr =
+    variantFromModel ||
     (typeof rawVariant === "string" ? rawVariant : "") ||
     (typeof rawReasoning === "string" ? rawReasoning : "") ||
-    "";
+    (typeof nestedReasoning === "string" ? nestedReasoning : "") ||
+    (typeof nestedThinking === "string" ? nestedThinking : "") ||
+    headerEffort;
   const requestedVariant = requestedVariantStr.toLowerCase().trim();
 
   const sessionSeed =
@@ -789,7 +814,7 @@ export async function routeChatCompletion(
             // "Claude Sonnet 4.6 is no longer available. Please switch to Claude Sonnet 5.5."
             const triedModels = new Set<string>([upstreamModelId.toLowerCase()]);
             const accountFallbacks: string[] = [];
-            for (const rawFb of getAntigravityTierFallbacks(target.upstreamModel)) {
+            for (const rawFb of getAntigravityTierFallbacks(target.upstreamModel, requestedVariant)) {
               const normalized = resolveAntigravityUpstreamModel(rawFb, target.provider.models, requestedVariant);
               const key = normalized.toLowerCase();
               if (!normalized || triedModels.has(key)) continue;

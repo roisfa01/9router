@@ -18,21 +18,15 @@ export async function generateOpenCodeConfig(
   const agProvider = config.providers.find((p) => p.dialect === "antigravity");
   const agReady = agProvider ? isProviderReady(agProvider, env, config.oauthAccounts) : false;
 
-  // 1. Antigravity Models with Clean Base Names (No -high / -medium / -low suffixes)
-  // Because OpenCode has built-in UI toggles for High/Medium/Low reasoning effort!
+  // 1. Antigravity Models with Clean Base Names (Default: Medium, supports Low / Medium / High in OpenCode UI)
   if (agReady || includeAllCatalog) {
     modelsMap["gemini-4-argon"] = {
-      name: "Gemini 4 Argon (Next-Gen Flagship Reasoning - 1M)",
-      modalities: { input: ["text", "image"], output: ["text"] },
-      limit: { context: 1000000, output: 64000 }
-    };
-    modelsMap["gemini-4-argon-high"] = {
-      name: "Gemini 4 Argon High (Max Reasoning Effort)",
+      name: "Gemini 4 Argon (Default: Medium · 1M Context)",
       modalities: { input: ["text", "image"], output: ["text"] },
       limit: { context: 1000000, output: 64000 }
     };
     modelsMap["gemini-3.8-flash"] = {
-      name: "Gemini 3.8 Flash (Rekomendasi Utama - 1M Context & Cepat)",
+      name: "Gemini 3.8 Flash (Default: Medium · 1M Context & Cepat)",
       modalities: { input: ["text", "image"], output: ["text"] },
       limit: { context: 1000000, output: 64000 }
     };
@@ -52,32 +46,12 @@ export async function generateOpenCodeConfig(
       limit: { context: 1000000, output: 64000 }
     };
     modelsMap["claude-sonnet-5-5"] = {
-      name: "Claude Sonnet 5.5 Thinking (Flagship Coding Agent)",
-      modalities: { input: ["text", "image"], output: ["text"] },
-      limit: { context: 200000, output: 64000 }
-    };
-    modelsMap["claude-sonnet-5-5-high"] = {
-      name: "Claude Sonnet 5.5 High Thinking",
+      name: "Claude Sonnet 5.5 (Default: Medium · Coding Agent)",
       modalities: { input: ["text", "image"], output: ["text"] },
       limit: { context: 200000, output: 64000 }
     };
     modelsMap["claude-opus-5-5"] = {
-      name: "Claude Opus 5.5 Thinking (Deep Synthesis)",
-      modalities: { input: ["text", "image"], output: ["text"] },
-      limit: { context: 200000, output: 64000 }
-    };
-    modelsMap["claude-opus-5-5-high"] = {
-      name: "Claude Opus 5.5 High Thinking",
-      modalities: { input: ["text", "image"], output: ["text"] },
-      limit: { context: 200000, output: 64000 }
-    };
-    modelsMap["claude-sonnet-4-6"] = {
-      name: "Claude Sonnet (Auto Sonnet 5.5)",
-      modalities: { input: ["text", "image"], output: ["text"] },
-      limit: { context: 200000, output: 64000 }
-    };
-    modelsMap["claude-opus-4-6"] = {
-      name: "Claude Opus (Auto Opus 5.5)",
+      name: "Claude Opus 5.5 (Default: Medium · Deep Synthesis)",
       modalities: { input: ["text", "image"], output: ["text"] },
       limit: { context: 200000, output: 64000 }
     };
@@ -85,7 +59,7 @@ export async function generateOpenCodeConfig(
 
   // 2. Smart Multi-Account Pool Auto Fallback
   modelsMap["auto"] = {
-    name: "⚡ 9Router Auto Fallback (Multi-Akun Google Antigravity)",
+    name: "⚡ 9Router Auto Fallback (Default: Medium · Multi-Akun)",
     modalities: { input: ["text", "image"], output: ["text"] },
     limit: { context: 1000000, output: 64000 }
   };
@@ -115,10 +89,10 @@ export async function generateOpenCodeConfig(
   }
 
   const defaultModel = modelsMap["gemini-4-argon"]
-    ? "9router/gemini-4-argon"
+    ? "9router/gemini-4-argon#medium"
     : modelsMap["gemini-3.8-flash"]
-      ? "9router/gemini-3.8-flash"
-      : "9router/auto";
+      ? "9router/gemini-3.8-flash#medium"
+      : "9router/auto#medium";
 
   return {
     $schema: "https://opencode.ai/config.json",

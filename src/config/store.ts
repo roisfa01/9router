@@ -143,6 +143,9 @@ function defaultSettings(env: Env): RouterSettings {
 const STALE_AG_COMBO_ROUTES = new Set([
   "antigravity/claude-sonnet-5-5-high",
   "antigravity/claude-opus-5-5-high",
+  "antigravity/claude-sonnet-4-6",
+  "antigravity/claude-opus-4-6-thinking",
+  "antigravity/gemini-3.8-flash-high",
   "antigravity/gemini-3.1-pro-high"
 ]);
 

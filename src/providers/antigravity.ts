@@ -96,15 +96,15 @@ const ANTIGRAVITY_MODEL_UPSTREAM_MAP: Record<string, string> = {
   "gemini-4-argon-high": "gemini-4-argon-high",
   "gemini-4-argon-medium": "gemini-4-argon-medium",
   "gemini-4-argon-low": "gemini-4-argon-low",
-  "gemini-4-argon": "gemini-4-argon-high",
-  "argon": "gemini-4-argon-high",
+  "gemini-4-argon": "gemini-4-argon-medium",
+  "argon": "gemini-4-argon-medium",
   "argon-high": "gemini-4-argon-high",
   "argon-medium": "gemini-4-argon-medium",
   "argon-low": "gemini-4-argon-low",
   "gemini-3.8-flash-high": "gemini-3.8-flash-high",
   "gemini-3.8-flash-medium": "gemini-3.8-flash-medium",
   "gemini-3.8-flash-low": "gemini-3.8-flash-low",
-  "gemini-3.8-flash": "gemini-3.8-flash-high",
+  "gemini-3.8-flash": "gemini-3.8-flash-medium",
   "gemini-3-flash": "gemini-3-flash",
   "gemini-2.5-flash": "gemini-2.5-flash",
   "gemini-2.5-pro": "gemini-2.5-pro",
@@ -120,36 +120,36 @@ const ANTIGRAVITY_MODEL_UPSTREAM_MAP: Record<string, string> = {
   "claude-sonnet-5-5-high": "claude-sonnet-5-5-high",
   "claude-sonnet-5-5-medium": "claude-sonnet-5-5-medium",
   "claude-sonnet-5-5-low": "claude-sonnet-5-5-low",
-  "claude-sonnet-5-5": "claude-sonnet-5-5-high",
+  "claude-sonnet-5-5": "claude-sonnet-5-5-medium",
   "claude-opus-5-5-high": "claude-opus-5-5-high",
   "claude-opus-5-5-medium": "claude-opus-5-5-medium",
   "claude-opus-5-5-low": "claude-opus-5-5-low",
-  "claude-opus-5-5": "claude-opus-5-5-high",
+  "claude-opus-5-5": "claude-opus-5-5-medium",
   "claude-opus-4-6-thinking": "claude-opus-5-5-high",
-  "claude-opus-4-6": "claude-opus-5-5-high",
+  "claude-opus-4-6": "claude-opus-5-5-medium",
   "claude-opus-4-6-high": "claude-opus-5-5-high",
   "claude-opus-4-6-medium": "claude-opus-5-5-medium",
   "claude-opus-4-6-low": "claude-opus-5-5-low",
-  "claude-opus-4-5": "claude-opus-5-5-high",
-  "claude-3-opus": "claude-opus-5-5-high",
-  "claude-3-opus-20240229": "claude-opus-5-5-high",
-  "claude-opus": "claude-opus-5-5-high",
-  "opus": "claude-opus-5-5-high",
-  "claude-sonnet-4-6": "claude-sonnet-5-5-high",
+  "claude-opus-4-5": "claude-opus-5-5-medium",
+  "claude-3-opus": "claude-opus-5-5-medium",
+  "claude-3-opus-20240229": "claude-opus-5-5-medium",
+  "claude-opus": "claude-opus-5-5-medium",
+  "opus": "claude-opus-5-5-medium",
+  "claude-sonnet-4-6": "claude-sonnet-5-5-medium",
   "claude-sonnet-4-6-thinking": "claude-sonnet-5-5-high",
   "claude-sonnet-4-6-high": "claude-sonnet-5-5-high",
   "claude-sonnet-4-6-medium": "claude-sonnet-5-5-medium",
   "claude-sonnet-4-6-low": "claude-sonnet-5-5-low",
-  "claude-sonnet-4-5": "claude-sonnet-5-5-high",
-  "claude-sonnet-4-20250514": "claude-sonnet-5-5-high",
-  "claude-sonnet-4": "claude-sonnet-5-5-high",
-  "claude-3-5-sonnet": "claude-sonnet-5-5-high",
-  "claude-3-5-sonnet-20241022": "claude-sonnet-5-5-high",
-  "claude-3-7-sonnet": "claude-sonnet-5-5-high",
-  "claude-3-7-sonnet-20250219": "claude-sonnet-5-5-high",
-  "claude-sonnet": "claude-sonnet-5-5-high",
-  "sonnet": "claude-sonnet-5-5-high",
-  "auto": "gemini-3.8-flash-high",
+  "claude-sonnet-4-5": "claude-sonnet-5-5-medium",
+  "claude-sonnet-4-20250514": "claude-sonnet-5-5-medium",
+  "claude-sonnet-4": "claude-sonnet-5-5-medium",
+  "claude-3-5-sonnet": "claude-sonnet-5-5-medium",
+  "claude-3-5-sonnet-20241022": "claude-sonnet-5-5-medium",
+  "claude-3-7-sonnet": "claude-sonnet-5-5-medium",
+  "claude-3-7-sonnet-20250219": "claude-sonnet-5-5-medium",
+  "claude-sonnet": "claude-sonnet-5-5-medium",
+  "sonnet": "claude-sonnet-5-5-medium",
+  "auto": "gemini-3.8-flash-medium",
   "gpt-oss-120b-medium": "gpt-oss-120b-medium"
 };
 
@@ -720,18 +720,69 @@ export function resolveAntigravityUpstreamModel(
 
   const lower = clean.toLowerCase();
 
-  // Tier variants for gemini-4-argon based on OpenCode reasoning effort or variant selector
-  if (lower === "gemini-4-argon" || lower === "gemini-4-argon-tiered" || lower === "argon") {
-    if (requestedVariant === "medium") return "gemini-4-argon-medium";
-    if (requestedVariant === "low") return "gemini-4-argon-low";
-    return "gemini-4-argon-high";
+  const normalizeTier = (v: string): "low" | "medium" | "high" => {
+    if (v === "low" || v === "minimal" || v === "none") return "low";
+    if (v === "high" || v === "max" || v === "xhigh") return "high";
+    return "medium";
+  };
+
+  // Explicit tier suffix on model ID (e.g. `gemini-4-argon-high`) still honors an explicit
+  // UI effort override (`low`/`medium`/`high`) if the user switched effort in OpenCode!
+  const explicitTierOverride =
+    requestedVariant === "low" ||
+    requestedVariant === "minimal" ||
+    requestedVariant === "none" ||
+    requestedVariant === "medium" ||
+    requestedVariant === "high" ||
+    requestedVariant === "max" ||
+    requestedVariant === "xhigh";
+
+  // 1. Gemini 4 Argon family (default: medium)
+  if (
+    lower === "gemini-4-argon" ||
+    lower === "gemini-4-argon-tiered" ||
+    lower === "argon" ||
+    (explicitTierOverride && lower.startsWith("gemini-4-argon-"))
+  ) {
+    return `gemini-4-argon-${normalizeTier(requestedVariant)}`;
   }
 
-  // Tier variants for gemini-3.8-flash based on OpenCode reasoning effort or variant selector
-  if (lower === "gemini-3.8-flash" || lower === "gemini-3.8-flash-tiered") {
-    if (requestedVariant === "medium") return "gemini-3.8-flash-medium";
-    if (requestedVariant === "low") return "gemini-3.8-flash-low";
-    return "gemini-3.8-flash-high";
+  // 2. Gemini 3.8 Flash family (default: medium)
+  if (
+    lower === "gemini-3.8-flash" ||
+    lower === "gemini-3.8-flash-tiered" ||
+    (explicitTierOverride && lower.startsWith("gemini-3.8-flash-"))
+  ) {
+    return `gemini-3.8-flash-${normalizeTier(requestedVariant)}`;
+  }
+
+  // 3. Claude Sonnet 5.5 & legacy Sonnet aliases (default: medium)
+  if (
+    lower === "claude-sonnet-5-5" ||
+    lower === "claude-sonnet-4-6" ||
+    lower === "claude-sonnet-4-5" ||
+    lower === "claude-sonnet" ||
+    lower === "sonnet" ||
+    (explicitTierOverride && (lower.startsWith("claude-sonnet-5-5-") || lower.startsWith("claude-sonnet-4-6-")))
+  ) {
+    return `claude-sonnet-5-5-${normalizeTier(requestedVariant)}`;
+  }
+
+  // 4. Claude Opus 5.5 & legacy Opus aliases (default: medium)
+  if (
+    lower === "claude-opus-5-5" ||
+    lower === "claude-opus-4-6" ||
+    lower === "claude-opus-4-5" ||
+    lower === "claude-opus" ||
+    lower === "opus" ||
+    (explicitTierOverride && (lower.startsWith("claude-opus-5-5-") || lower.startsWith("claude-opus-4-6-")))
+  ) {
+    return `claude-opus-5-5-${normalizeTier(requestedVariant)}`;
+  }
+
+  // 5. Auto pool respects effort selector too (default: medium)
+  if (lower === "auto") {
+    return `gemini-3.8-flash-${normalizeTier(requestedVariant)}`;
   }
 
   const fromMap = ANTIGRAVITY_MODEL_UPSTREAM_MAP[lower];
@@ -1416,6 +1467,21 @@ export function antigravityStreamToOpenAIStream(
     controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
   };
 
+  const emitUsageOnlyChunk = (
+    controller: TransformStreamDefaultController<Uint8Array>,
+    usage: Record<string, number>
+  ) => {
+    const obj: Record<string, unknown> = {
+      id: chatId,
+      object: "chat.completion.chunk",
+      created,
+      model: requestedModel,
+      choices: [],
+      usage
+    };
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+  };
+
   const processDataLine = (
     jsonStr: string,
     controller: TransformStreamDefaultController<Uint8Array>
@@ -1535,7 +1601,10 @@ export function antigravityStreamToOpenAIStream(
             completionTokens,
             totalTokens: promptTokens + completionTokens
           };
-          emitChunk(controller, {}, null, {
+          // IMPORTANT: choices MUST be `[]` on trailing usage chunks! Emitting `finish_reason: null`
+          // AFTER `finish_reason: "tool_calls"` overwrites finishReason in OpenAI SDKs and triggers
+          // "OpenAI Chat stream ended without finish_reason".
+          emitUsageOnlyChunk(controller, {
             prompt_tokens: finalUsage.promptTokens,
             completion_tokens: finalUsage.completionTokens,
             total_tokens: finalUsage.totalTokens
